@@ -6,6 +6,7 @@ import zadDom.chat.client.ClientUdp;
 
 import java.io.*;
 import java.net.*;
+import java.util.Scanner;
 
 public class Client {
 
@@ -33,8 +34,8 @@ public class Client {
 
             ClientTcp clientTcp = new ClientTcp(getTcpSocket(), this);
             setOut(new PrintWriter(getTcpSocket().getOutputStream(), true));
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-            this.setNick(clientTcp.register(bufferedReader));
+            Scanner scanner = new Scanner(System.in);
+            this.setNick(clientTcp.register(scanner));
             clientTcp.start();
             ClientUdp clientUdp = new ClientUdp(getDatagramSocket());
             clientUdp.start();
@@ -42,8 +43,8 @@ public class Client {
             multicast.start();
 
             while (true) {
-                if(bufferedReader.ready()) {
-                        userInput = bufferedReader.readLine();
+                if(scanner.hasNextLine()) {
+                        userInput = scanner.next();
                         if(userInput.equals("U")) {
                             sendAscii("charmander", false);
                             continue;
@@ -75,7 +76,7 @@ public class Client {
     private void sendUdpMessage(String message) {
         byte[] sendBuffer = message.getBytes();
         try {
-            DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, InetAddress.getByName("localhost"), getPort());
+            DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, InetAddress.getByName(address), getPort());
             getDatagramSocket().send(sendPacket);
         } catch (IOException e) {
             e.printStackTrace();
@@ -84,7 +85,6 @@ public class Client {
 
     private void sendMulticastMessage(String message) {
         byte[] sendBuffer = message.getBytes();
-
         try {
             DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, getGroup(), getMultiPort());
             getDatagramSocket().send(sendPacket);
@@ -99,13 +99,13 @@ public class Client {
 
     public void sendAscii(String fileName, boolean multicast){
         File file = new File(fileName + ".txt");
-        BufferedReader br;
+        Scanner scanner;
         try {
-            br = new BufferedReader(new FileReader(file));
+            scanner = new Scanner(new FileReader(file));
             String art = "";
             String tmpArt;
-            while (br.ready()) {
-                tmpArt = br.readLine();
+            while (scanner.hasNextLine()) {
+                tmpArt = scanner.nextLine();
                 if (art.length() + tmpArt.length() + getNick().length() + 1 > 4096) {
                     System.out.println("Message exceeded max size (4096 B)");
                 }
@@ -120,7 +120,6 @@ public class Client {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     //getters and setters
