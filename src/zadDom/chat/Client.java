@@ -5,10 +5,7 @@ import zadDom.chat.client.ClientTcp;
 import zadDom.chat.client.ClientUdp;
 
 import java.io.*;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.Socket;
+import java.net.*;
 
 public class Client {
 
@@ -16,6 +13,8 @@ public class Client {
     private Socket tcpSocket = null;
     private int port = 1234;
     private int multiPort = 9875;
+    private String address = "localhost";
+    private String multiAddress = "225.0.0.0";
     private PrintWriter out;
     private String nick;
     private InetAddress group;
@@ -28,9 +27,9 @@ public class Client {
     private void start() {
         String userInput;
         try {
-            setTcpSocket(new Socket("localhost", port));
+            setTcpSocket(new Socket(getAddress(), port));
             setDatagramSocket(new DatagramSocket(getTcpSocket().getLocalPort()));
-            setGroup(InetAddress.getByName("230.0.0.0"));
+            setGroup(InetAddress.getByName(multiAddress));
 
             ClientTcp clientTcp = new ClientTcp(getTcpSocket(), this);
             setOut(new PrintWriter(getTcpSocket().getOutputStream(), true));
@@ -39,11 +38,12 @@ public class Client {
             clientTcp.start();
             ClientUdp clientUdp = new ClientUdp(getDatagramSocket());
             clientUdp.start();
-            new ClientMulticast().start();
+            ClientMulticast multicast = new ClientMulticast(getMultiAddress(), multiPort);
+            multicast.start();
 
             while (true) {
                 if(bufferedReader.ready()) {
-                    if ((userInput = bufferedReader.readLine()) != null) {
+                        userInput = bufferedReader.readLine();
                         if(userInput.equals("U")) {
                             sendAscii("charmander", false);
                             continue;
@@ -55,15 +55,14 @@ public class Client {
                         getOut().println(userInput);
                     }
                 }
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        finally {
             if (getTcpSocket() != null) {
                 try {
                     getTcpSocket().close();
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -75,7 +74,6 @@ public class Client {
 
     private void sendUdpMessage(String message) {
         byte[] sendBuffer = message.getBytes();
-
         try {
             DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, InetAddress.getByName("localhost"), getPort());
             getDatagramSocket().send(sendPacket);
@@ -106,7 +104,8 @@ public class Client {
             br = new BufferedReader(new FileReader(file));
             String art = "";
             String tmpArt;
-            while ((tmpArt = br.readLine()) != null) {
+            while (br.ready()) {
+                tmpArt = br.readLine();
                 if (art.length() + tmpArt.length() + getNick().length() + 1 > 4096) {
                     System.out.println("Message exceeded max size (4096 B)");
                 }
@@ -180,5 +179,21 @@ public class Client {
 
     public void setGroup(InetAddress group) {
         this.group = group;
+    }
+
+    public String getMultiAddress() {
+        return multiAddress;
+    }
+
+    public void setMultiAddress(String multiAddress) {
+        this.multiAddress = multiAddress;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 }

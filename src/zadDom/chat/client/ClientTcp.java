@@ -24,12 +24,12 @@ public class ClientTcp extends Thread {
 
     public void run() {
         try {
-            String response;
+            String response = "";
             while (!socket.isClosed()) {
-                if ((response = in.readLine()) != null)
+                if (in.ready())
+                    response = in.readLine();
                     System.out.println(response);
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -39,13 +39,13 @@ public class ClientTcp extends Thread {
     public String register(BufferedReader stdIn) {
         String nick;
         String response;
-
         System.out.println("Name:");
         try {
             nick = stdIn.readLine();
             client.sendTcpMessage(nick);
             //accepts name if it was not taken
-            while ((response = in.readLine()) != null) {
+            while (in.ready()) {
+                response = in.readLine();
                 if (response.equals("ok"))
                     break;
                 else {
